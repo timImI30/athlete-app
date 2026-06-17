@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Tages-Check-in</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 500px; margin: 40px auto; background:#f5f5f5; padding:20px; }
+    h1 { color: #333; }
+    label { display:block; margin-top: 15px; font-weight:bold; }
+    input, textarea { width:100%; padding:8px; margin-top:5px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box; }
+    button { margin-top:20px; padding:10px 20px; background:#2b8a3e; color:white; border:none; border-radius:6px; font-size:16px; cursor:pointer; }
+    button:hover { background:#237a33; }
+  </style>
+</head>
+<body>
+  <h1>Tages-Check-in</h1>
+  <form>
+    <label for="training">Trainingsintensität (1 = locker, 10 = maximal)</label>
+    <input type="number" id="training" min="1" max="10" required>
+
+    <label for="schlaf">Schlafstunden letzte Nacht</label>
+    <input type="number" id="schlaf" min="0" max="14" step="0.5" required>
+
+    <label for="muskelkater">Muskelkater / Erschöpfung (1 = nichts, 10 = extrem)</label>
+    <input type="number" id="muskelkater" min="1" max="10" required>
+
+    <label for="stimmung">Stimmung (1 = schlecht, 10 = super)</label>
+    <input type="number" id="stimmung" min="1" max="10" required>
+
+    <label for="notiz">Notiz (optional)</label>
+    <textarea id="notiz" rows="3"></textarea>
+
+    <button type="submit">Check-in abschicken</button>
+  </form>
+</body>
+</html>
