@@ -1,36 +1,189 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <title>Tages-Check-in</title>
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 500px; margin: 40px auto; background:#f5f5f5; padding:20px; }
-    h1 { color: #333; }
-    label { display:block; margin-top: 15px; font-weight:bold; }
-    input, textarea { width:100%; padding:8px; margin-top:5px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box; }
-    button { margin-top:20px; padding:10px 20px; background:#2b8a3e; color:white; border:none; border-radius:6px; font-size:16px; cursor:pointer; }
-    button:hover { background:#237a33; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tages-Check-in</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Arial, sans-serif;
+    max-width: 480px;
+    margin: 0 auto;
+    background: #f5f5f5;
+    padding: 24px 20px 60px;
+  }
+  h1 { color: #222; margin-bottom: 4px; }
+  #dateDisplay { color: #666; margin-top: 0; margin-bottom: 24px; }
+  .field { margin-bottom: 28px; }
+  .field label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #333;
+  }
+  .value-badge {
+    background: #2b8a3e;
+    color: white;
+    padding: 3px 12px;
+    border-radius: 12px;
+    font-size: 15px;
+    min-width: 30px;
+    text-align: center;
+  }
+  input[type=range] {
+    width: 100%;
+    height: 10px;
+    -webkit-appearance: none;
+    background: #ddd;
+    border-radius: 5px;
+    outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #2b8a3e;
+    cursor: pointer;
+    border: 3px solid white;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #2b8a3e;
+    cursor: pointer;
+    border: 3px solid white;
+  }
+  textarea {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-family: inherit;
+    font-size: 15px;
+    resize: vertical;
+  }
+  button.save {
+    width: 100%;
+    padding: 16px;
+    font-size: 18px;
+    font-weight: bold;
+    background: #2b8a3e;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    margin-top: 8px;
+    cursor: pointer;
+  }
+  button.save:active { background: #237a33; }
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #222;
+    color: white;
+    padding: 14px 22px;
+    border-radius: 8px;
+    font-size: 15px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  #toast.show { opacity: 1; }
+</style>
 </head>
 <body>
-  <h1>Tages-Check-in</h1>
-  <form>
-    <label for="training">Trainingsintensität (1 = locker, 10 = maximal)</label>
-    <input type="number" id="training" min="1" max="10" required>
 
-    <label for="schlaf">Schlafstunden letzte Nacht</label>
-    <input type="number" id="schlaf" min="0" max="14" step="0.5" required>
+<h1>Tages-Check-in</h1>
+<p id="dateDisplay"></p>
 
-    <label for="muskelkater">Muskelkater / Erschöpfung (1 = nichts, 10 = extrem)</label>
-    <input type="number" id="muskelkater" min="1" max="10" required>
+<div class="field">
+  <label>Trainingsintensität heute <span class="value-badge" id="trainingVal">5</span></label>
+  <input type="range" id="training" min="0" max="10" value="5" oninput="trainingVal.textContent=this.value">
+</div>
 
-    <label for="stimmung">Stimmung (1 = schlecht, 10 = super)</label>
-    <input type="number" id="stimmung" min="1" max="10" required>
+<div class="field">
+  <label>Schlafstunden letzte Nacht <span class="value-badge" id="schlafVal">7</span></label>
+  <input type="range" id="schlaf" min="0" max="12" step="0.5" value="7" oninput="schlafVal.textContent=this.value">
+</div>
 
-    <label for="notiz">Notiz (optional)</label>
-    <textarea id="notiz" rows="3"></textarea>
+<div class="field">
+  <label>Muskelkater / Erschöpfung <span class="value-badge" id="muskelkaterVal">3</span></label>
+  <input type="range" id="muskelkater" min="0" max="10" value="3" oninput="muskelkaterVal.textContent=this.value">
+</div>
 
-    <button type="submit">Check-in abschicken</button>
-  </form>
+<div class="field">
+  <label>Stimmung / Motivation <span class="value-badge" id="stimmungVal">7</span></label>
+  <input type="range" id="stimmung" min="0" max="10" value="7" oninput="stimmungVal.textContent=this.value">
+</div>
+
+<div class="field">
+  <label>Notiz</label>
+  <textarea id="notiz" rows="3" placeholder="Was ist dir heute aufgefallen? (optional)"></textarea>
+</div>
+
+<button class="save" onclick="saveCheckin()">Speichern</button>
+
+<div id="toast"></div>
+
+<script>
+  // Heutiges Datum als Schlüssel, z.B. "2026-06-22"
+  const dateKey = new Date().toISOString().split('T')[0];
+  document.getElementById('dateDisplay').textContent =
+    "Heute: " + new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  function getAllCheckins() {
+    return JSON.parse(localStorage.getItem('athleten_checkins') || '{}');
+  }
+
+  // Falls für heute schon ein Eintrag existiert: Slider damit füllen
+  function loadTodayIfExists() {
+    const all = getAllCheckins();
+    const today = all[dateKey];
+    if (!today) return;
+
+    training.value = today.training; trainingVal.textContent = today.training;
+    schlaf.value = today.schlaf; schlafVal.textContent = today.schlaf;
+    muskelkater.value = today.muskelkater; muskelkaterVal.textContent = today.muskelkater;
+    stimmung.value = today.stimmung; stimmungVal.textContent = today.stimmung;
+    notiz.value = today.notiz || '';
+  }
+  loadTodayIfExists();
+
+  function saveCheckin() {
+    const all = getAllCheckins();
+    const existsAlready = !!all[dateKey];
+
+    if (existsAlready) {
+      const overwrite = confirm("Du hast heute schon einen Check-in gespeichert. Soll er überschrieben werden?");
+      if (!overwrite) return;
+    }
+
+    all[dateKey] = {
+      training: Number(training.value),
+      schlaf: Number(schlaf.value),
+      muskelkater: Number(muskelkater.value),
+      stimmung: Number(stimmung.value),
+      notiz: notiz.value.trim()
+    };
+
+    localStorage.setItem('athleten_checkins', JSON.stringify(all));
+    showToast("Check-in gespeichert! ✓");
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+</script>
+
 </body>
 </html>
