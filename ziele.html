@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ziele</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Arial, sans-serif;
+    max-width: 480px;
+    margin: 0 auto;
+    background: #f5f5f5;
+    padding: 0 20px 60px;
+  }
+  .navbar {
+    display: flex; gap: 8px; padding: 20px 0 16px;
+    position: sticky; top: 0; background: #f5f5f5;
+  }
+  .navlink {
+    flex: 1; text-align: center; padding: 10px 4px; border-radius: 8px;
+    text-decoration: none; color: #555; background: #e8e8e8; font-weight: 600; font-size: 14px;
+  }
+  .navlink.active { background: #2b8a3e; color: white; }
+  h1 { color: #222; font-size: 22px; margin-bottom: 16px; }
+  h2 { color: #555; font-size: 15px; margin: 20px 0 10px; }
+
+  .add-btn {
+    width: 100%; padding: 14px; font-size: 16px; font-weight: bold;
+    background: #2b8a3e; color: white; border: none; border-radius: 10px;
+    cursor: pointer; margin-bottom: 16px;
+  }
+
+  .add-form {
+    display: none;
+    background: white; border-radius: 10px; padding: 16px;
+    margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .add-form.show { display: block; }
+  .add-form label { display: block; font-weight: 600; margin-top: 12px; margin-bottom: 6px; font-size: 14px; color: #333; }
+  .add-form input, .add-form select {
+    width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 15px;
+  }
+  .past-warning { color: #e03131; font-size: 13px; margin-top: 6px; display: none; }
+  .past-warning.show { display: block; }
+  .form-buttons { display: flex; gap: 10px; margin-top: 16px; }
+  .form-buttons button {
+    flex: 1; padding: 12px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; font-size: 15px;
+  }
+  .btn-save { background: #2b8a3e; color: white; }
+  .btn-cancel { background: #e8e8e8; color: #444; }
+
+  .empty-hint {
+    text-align: center; color: #777; background: white;
+    border-radius: 10px; padding: 30px 16px; font-size: 15px;
+  }
+
+  .goal-card {
+    display: flex; align-items: flex-start; gap: 12px;
+    background: white; border-radius: 10px; padding: 14px;
+    margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .goal-card.done { opacity: 0.55; }
+  .check-circle {
+    width: 30px; height: 30px; min-width: 30px; border-radius: 50%;
+    border: 2px solid #2b8a3e; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: white; margin-top: 2px;
+  }
+  .check-circle.done { background: #2b8a3e; }
+  .goal-body { flex: 1; }
+  .goal-text { font-size: 15px; color: #222; font-weight: 600; }
+  .goal-text.done { text-decoration: line-through; color: #888; }
+  .goal-meta { display: flex; gap: 8px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+  .goal-date { font-size: 13px; color: #666; }
+  .goal-date.overdue { color: #e03131; font-weight: 700; }
+  .goal-tag {
+    font-size: 12px; background: #e8e8e8; color: #555;
+    padding: 2px 9px; border-radius: 10px;
+  }
+  .delete-btn {
+    background: none; border: none; font-size: 18px; cursor: pointer; color: #aaa; padding: 4px;
+  }
+
+  details { margin-top: 20px; }
+  summary { font-weight: 600; color: #555; cursor: pointer; font-size: 15px; padding: 6px 0; }
+</style>
+</head>
+<body>
+
+<div class="navbar">
+  <a href="index.html" class="navlink">Check-in</a>
+  <a href="uebersicht.html" class="navlink">Übersicht</a>
+  <a href="ziele.html" class="navlink active">Ziele</a>
+</div>
+
+<h1>Meine Ziele</h1>
+
+<button class="add-btn" onclick="toggleForm()">+ Neues Ziel</button>
+
+<div class="add-form" id="addForm">
+  <label>Zieltext</label>
+  <input type="text" id="zielText" placeholder="z.B. Sprintzeit 30m unter 4.2 Sekunden">
+
+  <label>Zieldatum</label>
+  <input type="date" id="zielDatum" oninput="checkPastDate()">
+  <div class="past-warning" id="pastWarning">⚠️ Dieses Datum liegt in der Vergangenheit.</div>
+
+  <label>Kategorie</label>
+  <select id="zielKategorie">
+    <option value="">Keine</option>
+    <option value="Athletik">Athletik</option>
+    <option value="Technik">Technik</option>
+    <option value="Mental">Mental</option>
+    <option value="Sonstiges">Sonstiges</option>
+  </select>
+
+  <div class="form-buttons">
+    <button class="btn-cancel" onclick="toggleForm()">Abbrechen</button>
+    <button class="btn-save" onclick="addZiel()">Speichern</button>
+  </div>
+</div>
+
+<div id="zieleContainer"></div>
+
+<script>
+  function todayStr() {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  function makeId() {
+    return 'z_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+  }
+
+  function getAllZiele() {
+    return JSON.parse(localStorage.getItem('athleten_ziele') || '[]');
+  }
+
+  function saveAllZiele(list) {
+    localStorage.setItem('athleten_ziele', JSON.stringify(list));
+  }
+
+  function toggleForm() {
+    const form = document.getElementById('addForm');
+    form.classList.toggle('show');
+    if (form.classList.contains('show')) {
+      zielText.value = '';
+      zielDatum.value = '';
+      zielKategorie.value = '';
+      pastWarning.classList.remove('show');
+    }
+  }
+
+  function checkPastDate() {
+    const warning = document.getElementById('pastWarning');
+    if (zielDatum.value && zielDatum.value < todayStr()) {
+      warning.classList.add('show');
+    } else {
+      warning.classList.remove('show');
+    }
+  }
+
+  function addZiel() {
+    const text = zielText.value.trim();
+    const datum = zielDatum.value;
+
+    if (!text || !datum) {
+      alert("Bitte Zieltext und Zieldatum ausfüllen.");
+      return;
+    }
+
+    const list = getAllZiele();
+    list.push({
+      id: makeId(),
+      text: text,
+      datum: datum,
+      kategorie: zielKategorie.value,
+      erledigt: false
+    });
+    saveAllZiele(list);
+    toggleForm();
+    renderZiele();
+  }
+
+  function toggleErledigt(id) {
+    const list = getAllZiele();
+    const ziel = list.find(z => z.id === id);
+    if (ziel) ziel.erledigt = !ziel.erledigt;
+    saveAllZiele(list);
+    renderZiele();
+  }
+
+  function deleteZiel(id) {
+    if (!confirm("Wirklich löschen?")) return;
+    const list = getAllZiele().filter(z => z.id !== id);
+    saveAllZiele(list);
+    renderZiele();
+  }
+
+  function goalCardHtml(z) {
+    const overdue = !z.erledigt && z.datum < todayStr();
+    const dateFormatted = new Date(z.datum + 'T00:00:00').toLocaleDateString('de-DE', { day: 'numeric', month: 'short', year: 'numeric' });
+
+    return `
+      <div class="goal-card ${z.erledigt ? 'done' : ''}">
+        <div class="check-circle ${z.erledigt ? 'done' : ''}" onclick="toggleErledigt('${z.id}')">
+          ${z.erledigt ? '✓' : ''}
+        </div>
+        <div class="goal-body">
+          <div class="goal-text ${z.erledigt ? 'done' : ''}">${escapeHtml(z.text)}</div>
+          <div class="goal-meta">
+            <span class="goal-date ${overdue ? 'overdue' : ''}">${overdue ? '⚠️ ' : ''}${dateFormatted}</span>
+            ${z.kategorie ? `<span class="goal-tag">${z.kategorie}</span>` : ''}
+          </div>
+        </div>
+        <button class="delete-btn" onclick="deleteZiel('${z.id}')">🗑</button>
+      </div>
+    `;
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function renderZiele() {
+    const list = getAllZiele();
+    const container = document.getElementById('zieleContainer');
+
+    if (list.length === 0) {
+      container.innerHTML = '<p class="empty-hint">Noch keine Ziele gesetzt — leg dein erstes Ziel an!</p>';
+      return;
+    }
+
+    const offen = list.filter(z => !z.erledigt).sort((a, b) => a.datum.localeCompare(b.datum));
+    const erledigt = list.filter(z => z.erledigt).sort((a, b) => a.datum.localeCompare(b.datum));
+
+    let html = '';
+
+    if (offen.length > 0) {
+      html += offen.map(goalCardHtml).join('');
+    } else {
+      html += '<p class="empty-hint">Keine offenen Ziele mehr 🎉</p>';
+    }
+
+    if (erledigt.length > 0) {
+      html += `
+        <details>
+          <summary>Erledigt (${erledigt.length})</summary>
+          ${erledigt.map(goalCardHtml).join('')}
+        </details>
+      `;
+    }
+
+    container.innerHTML = html;
+  }
+
+  renderZiele();
+</script>
+
+</body>
+</html>
