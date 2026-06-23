@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Übersicht</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Arial, sans-serif;
+    max-width: 480px;
+    margin: 0 auto;
+    background: #f5f5f5;
+    padding: 0 20px 60px;
+  }
+  .navbar {
+    display: flex;
+    gap: 8px;
+    padding: 20px 0 16px;
+    position: sticky;
+    top: 0;
+    background: #f5f5f5;
+  }
+  .navlink {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #555;
+    background: #e8e8e8;
+    font-weight: 600;
+  }
+  .navlink.active { background: #2b8a3e; color: white; }
+  h2 { color: #222; margin: 16px 0 12px; font-size: 18px; }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .stat-box { border-radius: 10px; padding: 14px; color: white; }
+  .stat-box.training { background: #2563eb; }
+  .stat-box.schlaf { background: #2b8a3e; }
+  .stat-box.muskelkater { background: #e8590c; }
+  .stat-box.stimmung { background: #7048e8; }
+  .stat-label { font-size: 13px; opacity: 0.9; }
+  .stat-value { font-size: 22px; font-weight: bold; margin-top: 4px; }
+
+  .empty-hint {
+    text-align: center;
+    color: #777;
+    background: white;
+    border-radius: 10px;
+    padding: 30px 16px;
+    font-size: 15px;
+  }
+
+  .section-divider { border-top: 2px solid #ddd; margin: 24px 0 16px; }
+
+  .card {
+    background: white;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .card-date { font-weight: 700; color: #222; margin-bottom: 10px; }
+  .card-values { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .value-pill { border-radius: 8px; padding: 6px 10px; font-size: 13px; font-weight: 600; color: white; }
+  .value-pill.training { background: #2563eb; }
+  .value-pill.schlaf { background: #2b8a3e; }
+  .value-pill.muskelkater { background: #e8590c; }
+  .value-pill.stimmung { background: #7048e8; }
+  .card-note { margin-top: 10px; font-style: italic; color: #555; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div class="navbar">
+  <a href="index.html" class="navlink">Check-in</a>
+  <a href="uebersicht.html" class="navlink active">Übersicht</a>
+</div>
+
+<h2>Letzte 7 Tage im Schnitt</h2>
+<div id="summary" class="summary-grid"></div>
+
+<div class="section-divider"></div>
+
+<h2>Verlauf</h2>
+<div id="list"></div>
+
+<script>
+  function getAllCheckins() {
+    return JSON.parse(localStorage.getItem('athleten_checkins') || '{}');
+  }
+
+  function getSortedEntries() {
+    const all = getAllCheckins();
+    return Object.entries(all)
+      .map(([date, values]) => ({ date, ...values }))
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }
+
+  function formatDate(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'long' });
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function renderSummary() {
+    const entries = getSortedEntries();
+    const summaryEl = document.getElementById('summary');
+
+    if (entries.length === 0) {
+      summaryEl.innerHTML = '<p class="empty-hint" style="grid-column: 1 / -1;">Noch keine Einträge — mach deinen ersten Check-in!</p>';
+      return;
+    }
+
+    const last7 = entries.slice(0, 7);
+    const avg = (key) => (last7.reduce((sum, e) => sum + e[key], 0) / last7.length).toFixed(1);
+
+    summaryEl.innerHTML = `
+      <div class="stat-box training">
+        <div class="stat-label">Ø Training</div>
+        <div class="stat-value">${avg('training')}/10</div>
+      </div>
+      <div class="stat-box schlaf">
+        <div class="stat-label">Ø Schlaf</div>
+        <div class="stat-value">${avg('schlaf')}h</div>
+      </div>
+      <div class="stat-box muskelkater">
+        <div class="stat-label">Ø Muskelkater</div>
+        <div class="stat-value">${avg('muskelkater')}/10</div>
+      </div>
+      <div class="stat-box stimmung">
+        <div class="stat-label">Ø Stimmung</div>
+        <div class="stat-value">${avg('stimmung')}/10</div>
+      </div>
+    `;
+  }
+
+  function renderList() {
+    const entries = getSortedEntries();
+    const listEl = document.getElementById('list');
+    if (entries.length === 0) { listEl.innerHTML = ''; return; }
+
+    listEl.innerHTML = entries.map(e => `
+      <div class="card">
+        <div class="card-date">${formatDate(e.date)}</div>
+        <div class="card-values">
+          <div class="value-pill training">🏋️ Training: ${e.training}</div>
+          <div class="value-pill schlaf">😴 Schlaf: ${e.schlaf}h</div>
+          <div class="value-pill muskelkater">💪 Muskelkater: ${e.muskelkater}</div>
+          <div class="value-pill stimmung">🙂 Stimmung: ${e.stimmung}</div>
+        </div>
+        ${e.notiz ? `<div class="card-note">„${escapeHtml(e.notiz)}"</div>` : ''}
+      </div>
+    `).join('');
+  }
+
+  renderSummary();
+  renderList();
+</script>
+
+</body>
+</html>
