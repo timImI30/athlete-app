@@ -24,12 +24,13 @@
   .navlink {
     flex: 1;
     text-align: center;
-    padding: 10px;
+    padding: 10px 4px;
     border-radius: 8px;
     text-decoration: none;
     color: #555;
     background: #e8e8e8;
     font-weight: 600;
+    font-size: 14px;
   }
   .navlink.active { background: #2b8a3e; color: white; }
   h1 { color: #222; margin-bottom: 4px; }
@@ -79,6 +80,7 @@
 <div class="navbar">
   <a href="index.html" class="navlink active">Check-in</a>
   <a href="uebersicht.html" class="navlink">Übersicht</a>
+  <a href="ziele.html" class="navlink">Ziele</a>
 </div>
 
 <h1>Tages-Check-in</h1>
@@ -157,8 +159,3 @@
     toast.textContent = msg;
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 2000);
-  }
-</script>
-
-</body>
-</html>
