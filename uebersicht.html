@@ -18,8 +18,8 @@
     position: sticky; top: 0; background: #f5f5f5;
   }
   .navlink {
-    flex: 1; text-align: center; padding: 10px; border-radius: 8px;
-    text-decoration: none; color: #555; background: #e8e8e8; font-weight: 600;
+    flex: 1; text-align: center; padding: 10px 4px; border-radius: 8px;
+    text-decoration: none; color: #555; background: #e8e8e8; font-weight: 600; font-size: 14px;
   }
   .navlink.active { background: #2b8a3e; color: white; }
   h2 { color: #222; margin: 16px 0 12px; font-size: 18px; }
@@ -64,6 +64,7 @@
 <div class="navbar">
   <a href="index.html" class="navlink">Check-in</a>
   <a href="uebersicht.html" class="navlink active">Übersicht</a>
+  <a href="ziele.html" class="navlink">Ziele</a>
 </div>
 
 <div id="riskBanner"></div>
@@ -112,7 +113,6 @@
     return str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
-  // ---- Risiko-Berechnung ----
   function berechneRisiko(entries) {
     if (entries.length < 3) {
       return { stufe: 'unbekannt', titel: 'Noch keine Einschätzung möglich', text: 'Noch nicht genug Daten für eine Einschätzung. Mach ein paar Check-ins mehr.' };
@@ -128,7 +128,6 @@
       e => e.training > SCHWELLEN.folgeTageTraining && e.schlaf < SCHWELLEN.folgeTageSchlaf
     );
 
-    // Zuerst HOCH prüfen
     if (
       (avgTraining >= SCHWELLEN.trainingHoch && avgSchlaf < SCHWELLEN.schlafKritisch) ||
       avgMuskelkater >= SCHWELLEN.muskelkaterHoch ||
@@ -137,7 +136,6 @@
       return { stufe: 'hoch', titel: 'Hoch', text: 'Übertraining-Risiko erhöht. Sprich mit deinem Coach über einen Erholungstag.' };
     }
 
-    // Dann MITTEL prüfen
     if (
       (avgTraining >= SCHWELLEN.trainingHoch && avgSchlaf >= SCHWELLEN.schlafKritisch && avgSchlaf < SCHWELLEN.schlafKnapp) ||
       (avgMuskelkater >= SCHWELLEN.muskelkaterErhoeht && avgMuskelkater < SCHWELLEN.muskelkaterHoch)
@@ -145,7 +143,6 @@
       return { stufe: 'mittel', titel: 'Mittel', text: 'Hohe Trainingsbelastung bei knapper Erholung. Schlaf priorisieren.' };
     }
 
-    // Sonst NIEDRIG
     return { stufe: 'niedrig', titel: 'Niedrig', text: 'Belastung und Erholung sind im Gleichgewicht. Weiter so.' };
   }
 
