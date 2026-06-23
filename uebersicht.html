@@ -14,32 +14,25 @@
     padding: 0 20px 60px;
   }
   .navbar {
-    display: flex;
-    gap: 8px;
-    padding: 20px 0 16px;
-    position: sticky;
-    top: 0;
-    background: #f5f5f5;
+    display: flex; gap: 8px; padding: 20px 0 16px;
+    position: sticky; top: 0; background: #f5f5f5;
   }
   .navlink {
-    flex: 1;
-    text-align: center;
-    padding: 10px;
-    border-radius: 8px;
-    text-decoration: none;
-    color: #555;
-    background: #e8e8e8;
-    font-weight: 600;
+    flex: 1; text-align: center; padding: 10px; border-radius: 8px;
+    text-decoration: none; color: #555; background: #e8e8e8; font-weight: 600;
   }
   .navlink.active { background: #2b8a3e; color: white; }
   h2 { color: #222; margin: 16px 0 12px; font-size: 18px; }
 
-  .summary-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-bottom: 28px;
-  }
+  .risk-banner { border-radius: 14px; padding: 18px; margin-bottom: 24px; }
+  .risk-niedrig { background: #2b8a3e; color: white; }
+  .risk-mittel { background: #f5b400; color: #222; }
+  .risk-hoch { background: #e03131; color: white; }
+  .risk-unbekannt { background: #e0e0e0; color: #555; }
+  .risk-title { font-size: 17px; font-weight: 800; margin-bottom: 6px; }
+  .risk-text { font-size: 14px; line-height: 1.45; }
+
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 28px; }
   .stat-box { border-radius: 10px; padding: 14px; color: white; }
   .stat-box.training { background: #2563eb; }
   .stat-box.schlaf { background: #2b8a3e; }
@@ -49,23 +42,13 @@
   .stat-value { font-size: 22px; font-weight: bold; margin-top: 4px; }
 
   .empty-hint {
-    text-align: center;
-    color: #777;
-    background: white;
-    border-radius: 10px;
-    padding: 30px 16px;
-    font-size: 15px;
+    text-align: center; color: #777; background: white;
+    border-radius: 10px; padding: 30px 16px; font-size: 15px;
   }
 
   .section-divider { border-top: 2px solid #ddd; margin: 24px 0 16px; }
 
-  .card {
-    background: white;
-    border-radius: 10px;
-    padding: 14px 16px;
-    margin-bottom: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-  }
+  .card { background: white; border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
   .card-date { font-weight: 700; color: #222; margin-bottom: 10px; }
   .card-values { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .value-pill { border-radius: 8px; padding: 6px 10px; font-size: 13px; font-weight: 600; color: white; }
@@ -83,6 +66,8 @@
   <a href="uebersicht.html" class="navlink active">Übersicht</a>
 </div>
 
+<div id="riskBanner"></div>
+
 <h2>Letzte 7 Tage im Schnitt</h2>
 <div id="summary" class="summary-grid"></div>
 
@@ -92,6 +77,17 @@
 <div id="list"></div>
 
 <script>
+  // ---- Hier kannst du die Schwellenwerte später selbst anpassen ----
+  const SCHWELLEN = {
+    trainingHoch: 7,             // Trainingsintensität ab diesem Wert gilt als "hoch"
+    schlafKritisch: 6,           // Schlaf UNTER diesem Wert ist zu wenig (Stufe Hoch)
+    schlafKnapp: 7,              // Schlaf UNTER diesem Wert ist "knapp" (Stufe Mittel)
+    muskelkaterHoch: 8,          // Muskelkater AB diesem Wert ist stark (Stufe Hoch)
+    muskelkaterErhoeht: 6,       // Muskelkater AB diesem Wert ist erhöht (Stufe Mittel)
+    folgeTageTraining: 7,        // Schwelle für die "3 Tage in Folge"-Regel (Training)
+    folgeTageSchlaf: 6.5         // Schwelle für die "3 Tage in Folge"-Regel (Schlaf)
+  };
+
   function getAllCheckins() {
     return JSON.parse(localStorage.getItem('athleten_checkins') || '{}');
   }
@@ -103,6 +99,10 @@
       .sort((a, b) => b.date.localeCompare(a.date));
   }
 
+  function average(arr, key) {
+    return arr.reduce((sum, e) => sum + e[key], 0) / arr.length;
+  }
+
   function formatDate(dateStr) {
     const d = new Date(dateStr + 'T00:00:00');
     return d.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'long' });
@@ -110,6 +110,56 @@
 
   function escapeHtml(str) {
     return str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // ---- Risiko-Berechnung ----
+  function berechneRisiko(entries) {
+    if (entries.length < 3) {
+      return { stufe: 'unbekannt', titel: 'Noch keine Einschätzung möglich', text: 'Noch nicht genug Daten für eine Einschätzung. Mach ein paar Check-ins mehr.' };
+    }
+
+    const letzte7 = entries.slice(0, 7);
+    const avgTraining = average(letzte7, 'training');
+    const avgSchlaf = average(letzte7, 'schlaf');
+    const avgMuskelkater = average(letzte7, 'muskelkater');
+
+    const letzte3 = entries.slice(0, 3);
+    const dreiTageUeberlastung = letzte3.length === 3 && letzte3.every(
+      e => e.training > SCHWELLEN.folgeTageTraining && e.schlaf < SCHWELLEN.folgeTageSchlaf
+    );
+
+    // Zuerst HOCH prüfen
+    if (
+      (avgTraining >= SCHWELLEN.trainingHoch && avgSchlaf < SCHWELLEN.schlafKritisch) ||
+      avgMuskelkater >= SCHWELLEN.muskelkaterHoch ||
+      dreiTageUeberlastung
+    ) {
+      return { stufe: 'hoch', titel: 'Hoch', text: 'Übertraining-Risiko erhöht. Sprich mit deinem Coach über einen Erholungstag.' };
+    }
+
+    // Dann MITTEL prüfen
+    if (
+      (avgTraining >= SCHWELLEN.trainingHoch && avgSchlaf >= SCHWELLEN.schlafKritisch && avgSchlaf < SCHWELLEN.schlafKnapp) ||
+      (avgMuskelkater >= SCHWELLEN.muskelkaterErhoeht && avgMuskelkater < SCHWELLEN.muskelkaterHoch)
+    ) {
+      return { stufe: 'mittel', titel: 'Mittel', text: 'Hohe Trainingsbelastung bei knapper Erholung. Schlaf priorisieren.' };
+    }
+
+    // Sonst NIEDRIG
+    return { stufe: 'niedrig', titel: 'Niedrig', text: 'Belastung und Erholung sind im Gleichgewicht. Weiter so.' };
+  }
+
+  function renderRiskBanner() {
+    const entries = getSortedEntries();
+    const risk = berechneRisiko(entries);
+    const icons = { hoch: '🔴', mittel: '🟡', niedrig: '🟢', unbekannt: '⚪' };
+
+    document.getElementById('riskBanner').innerHTML = `
+      <div class="risk-banner risk-${risk.stufe}">
+        <div class="risk-title">${icons[risk.stufe]} Belastungsrisiko: ${risk.titel}</div>
+        <div class="risk-text">${risk.text}</div>
+      </div>
+    `;
   }
 
   function renderSummary() {
@@ -122,7 +172,7 @@
     }
 
     const last7 = entries.slice(0, 7);
-    const avg = (key) => (last7.reduce((sum, e) => sum + e[key], 0) / last7.length).toFixed(1);
+    const avg = (key) => average(last7, key).toFixed(1);
 
     summaryEl.innerHTML = `
       <div class="stat-box training">
@@ -163,6 +213,7 @@
     `).join('');
   }
 
+  renderRiskBanner();
   renderSummary();
   renderList();
 </script>
