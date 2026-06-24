@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login Test</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Arial, sans-serif;
+    max-width: 420px;
+    margin: 60px auto;
+    background: #f5f5f5;
+    padding: 0 20px;
+  }
+  h1 { color: #222; font-size: 22px; }
+  input {
+    width: 100%; padding: 12px; margin-top: 10px;
+    border-radius: 8px; border: 1px solid #ccc; font-size: 15px;
+  }
+  button {
+    width: 100%; padding: 12px; margin-top: 14px;
+    border-radius: 8px; border: none; font-weight: bold; font-size: 15px; cursor: pointer;
+  }
+  .btn-signup { background: #2563eb; color: white; }
+  .btn-login { background: #2b8a3e; color: white; }
+  .btn-logout { background: #e03131; color: white; }
+  #status {
+    margin-top: 20px; padding: 14px; border-radius: 8px;
+    background: white; font-size: 14px; color: #333; white-space: pre-wrap;
+  }
+</style>
+</head>
+<body>
+
+<h1>🔐 Login Test</h1>
+
+<input type="email" id="email" placeholder="E-Mail-Adresse">
+<input type="password" id="password" placeholder="Passwort (mind. 6 Zeichen)">
+
+<button class="btn-signup" onclick="signUp()">Registrieren</button>
+<button class="btn-login" onclick="signIn()">Einloggen</button>
+<button class="btn-logout" onclick="signOut()">Ausloggen</button>
+
+<div id="status">Noch nicht eingeloggt.</div>
+
+<script>
+  // ---- HIER DEINE EIGENEN DATEN AUS SCHRITT B EINTRAGEN ----
+  const SUPABASE_URL = "DEINE_PROJECT_URL_HIER";
+  const SUPABASE_ANON_KEY = "DEIN_ANON_KEY_HIER";
+
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  function showStatus(msg) {
+    document.getElementById('status').textContent = msg;
+  }
+
+  async function signUp() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) { showStatus("Fehler: " + error.message); return; }
+    showStatus("Registriert! E-Mail: " + data.user.email);
+  }
+
+  async function signIn() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) { showStatus("Fehler: " + error.message); return; }
+    showStatus("Eingeloggt als: " + data.user.email);
+  }
+
+  async function signOut() {
+    await supabase.auth.signOut();
+    showStatus("Ausgeloggt.");
+  }
+
+  async function checkSession() {
+    const { data } = await supabase.auth.getSession();
+    if (data.session) {
+      showStatus("Bereits eingeloggt als: " + data.session.user.email);
+    }
+  }
+  checkSession();
+</script>
+
+</body>
+</html>
